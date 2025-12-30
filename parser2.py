@@ -9,27 +9,20 @@ def extract_rule_data(file_path):
     
     strings = re.findall(r'[\x20-\x7E]{4,}', text)
     
-    # EXPANDED junk patterns
-    junk_patterns = [
-        'ObserveIT', 'BusinessEntities', 'ActivityAlerts', 'BackingField',
-        'System.', 'Microsoft.', 'mscorlib', 'Version=', 'Culture=', 
-        'PublicKeyToken', 'xmlns', 'ArrayOf', 'schemas.datacontract',
-        'schemas.microsoft', 'http://', 'https://', '.dll', 'Assembly',
-        'RuleConditions', 'ActionConfiguration', 'AlertRule', 'Binary',
-        'SerializationInfo', 'Exported', 'InAppElement', 'Config',
-        '_Major', '_Minor', '_Build', '_Revision', '_items', '_size', '_version',
-        'RuleCategory', 'RuleLogicOperators', 'RuleCondition', 'RuleUserList',
-        'PreventionAlerts', 'BaseAction', 'eAssignMode', 'RuleHashItemFlags',
-        'k_', '<', '>', 'Lry\'', 'Q@r', 'flario', 'DIRXXR', 'eD?d',
-        'ExportVersion', 'TableName', 'IsDeleted', 'IsDeployed', 'IsSystem',
-        'IsSpecial', 'IsDefaultAssigned', 'RulesCount', 'ListId', 'ListName',
-        'LastUpdateTime', 'Property', 'Operator', 'OperatorStr', 'ObjectId',
-        'ConditionOperators', 'Parent', 'OrderId', 'Adminb', 'value__',
-        'TAQ7510'  # your username showing up
+    junk_starts = [
+        'ObserveIT.', 'System.', 'Microsoft.', 'mscorlib', 
+        'xmlns', 'http://', 'https://', 'schemas.',
+        'k__BackingField', '<', '>'
+    ]
+    
+    junk_contains = [
+        'BackingField', 'BusinessEntities', 'ActivityAlerts', 
+        'ArrayOf', 'schemas.datacontract'
     ]
     
     categories = ['DATA EXFILTRATION', 'COMPLIANCE', 'SUSPICIOUS ACTIVITY', 
-                  'FILE ACTIVITY', 'PRIVILEGED USERS', 'SYSTEM TAMPERING']
+                  'FILE ACTIVITY', 'PRIVILEGED USERS', 'SYSTEM TAMPERING',
+                  'DATA THEFT', 'SECURITY', 'THREAT DETECTION']
     os_types = ['Windows', 'Mac', 'Linux', 'Windows/Mac', 'All']
     risk_levels = ['Low', 'Medium', 'High', 'Critical', 'Info']
     
@@ -46,17 +39,18 @@ def extract_rule_data(file_path):
     
     for s in strings:
         s = s.strip()
-        
-        # Skip junk
-        if any(junk in s for junk in junk_patterns):
-            continue
         if len(s) < 4:
             continue
-        # Skip if it's mostly special characters
-        if sum(c.isalnum() or c.isspace() for c in s) < len(s) * 0.5:
+        if any(s.startswith(j) for j in junk_starts):
+            continue
+        if any(j in s for j in junk_contains):
+            continue
+        
+        alnum_ratio = sum(c.isalnum() or c.isspace() for c in s) / len(s)
+        if alnum_ratio < 0.6:
             continue
             
-        if ('triggered' in s.lower() or 'alert will be' in s.lower()) and len(s) > 50:
+        if ('triggered' in s.lower() or 'alert will be' in s.lower()) and len(s) > 30:
             rule_data['Description'] = s
             continue
         if s.upper() in [c.upper() for c in categories]:
@@ -81,7 +75,6 @@ def extract_rule_data(file_path):
             unique_leftovers.append(s)
     
     rule_data['Did What Strings'] = ' | '.join(unique_leftovers)
-    
     return rule_data
 
 def process_folder(folder_path, output_csv):
@@ -100,6 +93,7 @@ def process_folder(folder_path, output_csv):
             writer.writerows(all_rules)
         print(f"\nDone! Wrote {len(all_rules)} rules to {output_csv}")
 
-folder_path = r"C:\Users\TAQ7510\Downloads\Data_Exfil"
-output_csv = r"C:\Users\TAQ7510\Downloads\Data_Exfil\Data_Exfil_Rules.csv"
+# === ALL RULES ===
+folder_path = r"C:\Users\TAQ7510\Downloads\ALL_Rules"
+output_csv = r"C:\Users\TAQ7510\Downloads\ALL_Rules\All_Rules_Export.csv"
 process_folder(folder_path, output_csv)
