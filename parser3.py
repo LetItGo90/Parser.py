@@ -146,8 +146,29 @@ def process_folder(folder_path, output_csv):
             writer.writeheader()
             writer.writerows(all_rules)
         print(f"\nDone! Wrote {len(all_rules)} rules to {output_csv}")
-
 # === RUN IT ===
 folder_path = r"C:\Users\TAQ7510\Downloads\ALL_Rules"
 output_csv = r"C:\Users\TAQ7510\Downloads\ALL_Rules\All_Rules_Export.csv"
-process_folder(folder_path, output_csv)
+
+try:
+    # Check if folder exists
+    if not os.path.exists(folder_path):
+        print(f"ERROR: Folder not found: {folder_path}")
+    else:
+        # Show what files are in there
+        all_files = os.listdir(folder_path)
+        rule_files = [f for f in all_files if f.endswith('.rule')]
+        print(f"Total files in folder: {len(all_files)}")
+        print(f"Rule files found: {len(rule_files)}")
+        
+        if rule_files:
+            print(f"First few: {rule_files[:5]}")
+            process_folder(folder_path, output_csv)
+        else:
+            # Show some actual filenames so you can see extensions
+            print(f"Sample filenames: {all_files[:10]}")
+            
+except Exception as e:
+    print(f"ERROR: {e}")
+
+input("\nPress Enter to close...")  # Keeps the window open
